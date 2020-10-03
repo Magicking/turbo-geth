@@ -776,7 +776,7 @@ func TestFastVsFullChains(t *testing.T) {
 		} else if types.CalcUncleHash(fblock.Uncles()) != types.CalcUncleHash(arblock.Uncles()) || types.CalcUncleHash(anblock.Uncles()) != types.CalcUncleHash(arblock.Uncles()) {
 			t.Errorf("block #%d [%x]: uncles mismatch: fastdb %v, ancientdb %v, archivedb %v", num, hash, fblock.Uncles(), anblock, arblock.Uncles())
 		}
-		if freceipts, anreceipts, areceipts := rawdb.ReadReceipts(fastDb, hash, *rawdb.ReadHeaderNumber(fastDb, hash)), rawdb.ReadReceipts(ancientDb, hash, *rawdb.ReadHeaderNumber(ancientDb, hash)), rawdb.ReadReceipts(archiveDb, hash, *rawdb.ReadHeaderNumber(archiveDb, hash)); types.DeriveSha(freceipts) != types.DeriveSha(areceipts) {
+		if freceipts, anreceipts, areceipts := rawdb.ReadReceipts(fastDb, hash, *rawdb.ReadHeaderNumber(fastDb, hash), nil), rawdb.ReadReceipts(ancientDb, hash, *rawdb.ReadHeaderNumber(ancientDb, hash), nil), rawdb.ReadReceipts(archiveDb, hash, *rawdb.ReadHeaderNumber(archiveDb, hash), nil); types.DeriveSha(freceipts) != types.DeriveSha(areceipts) {
 			t.Errorf("block #%d [%x]: receipts mismatch: fastdb %v, ancientdb %v, archivedb %v", num, hash, freceipts, anreceipts, areceipts)
 		}
 	}
@@ -1029,29 +1029,32 @@ func TestChainTxReorgs(t *testing.T) {
 	}
 
 	// removed tx
-	for i, tx := range (types.Transactions{pastDrop, freshDrop}) {
+	txs := types.Transactions{pastDrop, freshDrop}
+	for i, tx := range txs {
 		if txn, _, _, _ := rawdb.ReadTransaction(db, tx.Hash()); txn != nil {
 			t.Errorf("drop %d: tx %v found while shouldn't have been", i, txn)
 		}
-		if rcpt, _, _, _ := rawdb.ReadReceipt(db, tx.Hash()); rcpt != nil {
+		if rcpt, _, _, _ := rawdb.ReadReceipt(db, tx.Hash(), nil); rcpt != nil {
 			t.Errorf("drop %d: receipt %v found while shouldn't have been", i, rcpt)
 		}
 	}
 	// added tx
-	for i, tx := range (types.Transactions{pastAdd, freshAdd, futureAdd}) {
+	txs = types.Transactions{pastAdd, freshAdd, futureAdd}
+	for i, tx := range txs {
 		if txn, _, _, _ := rawdb.ReadTransaction(db, tx.Hash()); txn == nil {
 			t.Errorf("add %d: expected tx to be found", i)
 		}
-		if rcpt, _, _, _ := rawdb.ReadReceipt(db, tx.Hash()); rcpt == nil {
+		if rcpt, _, _, _ := rawdb.ReadReceipt(db, tx.Hash(), nil); rcpt == nil {
 			t.Errorf("add %d: expected receipt to be found", i)
 		}
 	}
 	// shared tx
-	for i, tx := range (types.Transactions{postponed, swapped}) {
+	txs = types.Transactions{postponed, swapped}
+	for i, tx := range txs {
 		if txn, _, _, _ := rawdb.ReadTransaction(db, tx.Hash()); txn == nil {
 			t.Errorf("share %d: expected tx to be found", i)
 		}
-		if rcpt, _, _, _ := rawdb.ReadReceipt(db, tx.Hash()); rcpt == nil {
+		if rcpt, _, _, _ := rawdb.ReadReceipt(db, tx.Hash(), nil); rcpt == nil {
 			t.Errorf("share %d: expected receipt to be found", i)
 		}
 	}
