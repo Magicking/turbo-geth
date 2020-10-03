@@ -1689,7 +1689,7 @@ func zstd(chaindata string) error {
 	trainFrom := uint64(9_000_000)
 	trainTo := uint64(11_000_000)
 	samples1 = samples1[:0]
-	for blockN := trainFrom; blockN < trainTo; blockN += (trainTo - trainFrom) / 4_000 {
+	for blockN := trainFrom; blockN < trainTo; blockN += (trainTo - trainFrom) / 7_000 {
 		binary.BigEndian.PutUint64(blockNBytes, blockN)
 		var v []byte
 		_, v, err := c2.Seek(blockNBytes)
@@ -1723,7 +1723,7 @@ func zstd(chaindata string) error {
 		}
 	}
 
-	trainFrom = 10_000_000
+	trainFrom = 8_000_000
 	for blockN := trainFrom; blockN < trainTo; blockN += (trainTo - trainFrom) / 5_000 {
 		binary.BigEndian.PutUint64(blockNBytes, blockN)
 		var v []byte
@@ -1741,7 +1741,7 @@ func zstd(chaindata string) error {
 		}
 	}
 
-	trainFrom = 10_500_000
+	trainFrom = 7_000_000
 	for blockN := trainFrom; blockN < trainTo; blockN += (trainTo - trainFrom) / 5_000 {
 		binary.BigEndian.PutUint64(blockNBytes, blockN)
 		var v []byte
