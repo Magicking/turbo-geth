@@ -1,6 +1,7 @@
 package stagedsync
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -85,6 +86,8 @@ func promoteLogIndex(db ethdb.DbWithPendingMutations, start uint64, quit <-chan 
 	checkFlushEvery := time.NewTicker(logIndicesCheckSizeEvery)
 	defer checkFlushEvery.Stop()
 
+	var receiptsReader = bytes.NewReader(nil)
+
 	for k, v, err := receipts.Seek(dbutils.EncodeBlockNumber(start)); k != nil; k, v, err = receipts.Next() {
 		if err != nil {
 			return err
@@ -126,7 +129,8 @@ func promoteLogIndex(db ethdb.DbWithPendingMutations, start uint64, quit <-chan 
 		}
 
 		receipts := types.Receipts{}
-		if err := cbor.Unmarshal(&receipts, v); err != nil {
+		receiptsReader.Reset(v)
+		if err := cbor.Unmarshal(&receipts, receiptsReader); err != nil {
 			return fmt.Errorf("receipt unmarshal failed: %w, blocl=%d", err, blockNum)
 		}
 
@@ -202,6 +206,8 @@ func unwindLogIndex(db ethdb.DbWithPendingMutations, from, to uint64, quitCh <-c
 	receipts := tx.Cursor(dbutils.BlockReceiptsPrefix)
 	defer receipts.Close()
 	start := dbutils.EncodeBlockNumber(to + 1)
+
+	var receiptsReader = bytes.NewReader(nil)
 	for k, v, err := receipts.Seek(start); k != nil; k, v, err = receipts.Next() {
 		if err != nil {
 			return err
@@ -210,7 +216,8 @@ func unwindLogIndex(db ethdb.DbWithPendingMutations, from, to uint64, quitCh <-c
 			return err
 		}
 		receipts := types.Receipts{}
-		if err := cbor.Unmarshal(&receipts, v); err != nil {
+		receiptsReader.Reset(v)
+		if err := cbor.Unmarshal(&receipts, receiptsReader); err != nil {
 			return fmt.Errorf("receipt unmarshal failed: %w, k=%x", err, k)
 		}
 
