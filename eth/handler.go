@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ledgerwatch/turbo-geth/common/dbutils"
 	"math"
 	"math/big"
 	"sync"
@@ -106,8 +105,6 @@ type ProtocolManager struct {
 	mode    downloader.SyncMode // Sync mode passed from the command line
 	datadir string
 	hdd     bool
-
-	compressionDicts *dbutils.CompressionDicts
 }
 
 // NewProtocolManager returns a new Ethereum sub protocol manager. The Ethereum sub protocol manages peers capable
@@ -117,26 +114,21 @@ func NewProtocolManager(config *params.ChainConfig, checkpoint *params.TrustedCh
 	if stagedSync == nil {
 		stagedSync = stagedsync.New(stagedsync.DefaultStages(), stagedsync.DefaultUnwindOrder())
 	}
-	dicts, err := dbutils.CompressionDictionaries()
-	if err != nil {
-		return nil, err
-	}
 
 	manager := &ProtocolManager{
-		networkID:        networkID,
-		forkFilter:       forkid.NewFilter(config, blockchain.Genesis().Hash(), blockchain.CurrentHeader().Number.Uint64()),
-		eventMux:         mux,
-		txpool:           txpool,
-		chainConfig:      config,
-		blockchain:       blockchain,
-		chaindb:          chaindb,
-		peers:            newPeerSet(),
-		whitelist:        whitelist,
-		stagedSync:       stagedSync,
-		mode:             mode,
-		txsyncCh:         make(chan *txsync),
-		quitSync:         make(chan struct{}),
-		compressionDicts: dicts,
+		networkID:   networkID,
+		forkFilter:  forkid.NewFilter(config, blockchain.Genesis().Hash(), blockchain.CurrentHeader().Number.Uint64()),
+		eventMux:    mux,
+		txpool:      txpool,
+		chainConfig: config,
+		blockchain:  blockchain,
+		chaindb:     chaindb,
+		peers:       newPeerSet(),
+		whitelist:   whitelist,
+		stagedSync:  stagedSync,
+		mode:        mode,
+		txsyncCh:    make(chan *txsync),
+		quitSync:    make(chan struct{}),
 	}
 
 	if mode == downloader.FullSync {
@@ -169,7 +161,7 @@ func NewProtocolManager(config *params.ChainConfig, checkpoint *params.TrustedCh
 		manager.checkpointHash = checkpoint.SectionHead
 	}
 
-	initPm(manager, engine, config, dicts, blockchain, chaindb)
+	initPm(manager, engine, config, blockchain, chaindb)
 
 	return manager, nil
 }
@@ -188,7 +180,7 @@ func (pm *ProtocolManager) SetHdd(hdd bool) {
 	}
 }
 
-func initPm(manager *ProtocolManager, engine consensus.Engine, chainConfig *params.ChainConfig, dicts *dbutils.CompressionDicts, blockchain *core.BlockChain, chaindb *ethdb.ObjectDatabase) {
+func initPm(manager *ProtocolManager, engine consensus.Engine, chainConfig *params.ChainConfig, blockchain *core.BlockChain, chaindb *ethdb.ObjectDatabase) {
 	sm, err := ethdb.GetStorageModeFromDB(chaindb)
 	if err != nil {
 		log.Error("Get storage mode", "err", err)
@@ -197,7 +189,7 @@ func initPm(manager *ProtocolManager, engine consensus.Engine, chainConfig *para
 	if manager.downloader != nil {
 		manager.downloader.Cancel()
 	}
-	manager.downloader = downloader.New(manager.checkpointNumber, chaindb, manager.eventMux, chainConfig, dicts, blockchain, nil, manager.removePeer, sm)
+	manager.downloader = downloader.New(manager.checkpointNumber, chaindb, manager.eventMux, chainConfig, blockchain, nil, manager.removePeer, sm)
 	manager.downloader.SetDataDir(manager.datadir)
 	manager.downloader.SetHdd(manager.hdd)
 	manager.downloader.SetStagedSync(manager.stagedSync)
@@ -805,7 +797,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 				return errResp(ErrDecode, "msg %v: %v", msg, err)
 			}
 			// Retrieve the requested block's receipts, skipping if unknown to us
-			results := pm.blockchain.GetReceiptsByHash(hash, pm.compressionDicts)
+			results := pm.blockchain.GetReceiptsByHash(hash)
 			if results == nil {
 				if header := pm.blockchain.GetHeaderByHash(hash); header == nil || header.ReceiptHash != types.EmptyRootHash {
 					continue

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ledgerwatch/turbo-geth/common/dbutils"
 	"os"
 
 	"github.com/ledgerwatch/turbo-geth/cmd/utils"
@@ -18,6 +19,8 @@ var (
 func main() {
 	cmd, cfg := cli.RootCommand()
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		defer dbutils.CompressionDicts.Release()
+
 		db, backend, err := cli.OpenDB(*cfg)
 		if err != nil {
 			log.Error("Could not connect to remoteDb", "error", err)

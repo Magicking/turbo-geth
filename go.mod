@@ -3,6 +3,7 @@ module github.com/ledgerwatch/turbo-geth
 go 1.15
 
 require (
+	github.com/AskAlexSharov/dictionaries v1.0.0
 	github.com/Azure/azure-pipeline-go v0.2.2 // indirect
 	github.com/Azure/azure-storage-blob-go v0.8.0
 	github.com/Azure/go-autorest/autorest/adal v0.8.3 // indirect

@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ledgerwatch/turbo-geth/common/dbutils"
 	"github.com/ledgerwatch/turbo-geth/eth/stagedsync"
 	"github.com/ledgerwatch/turbo-geth/log"
-	"github.com/ledgerwatch/turbo-geth/turbo/node"
-
 	turbocli "github.com/ledgerwatch/turbo-geth/turbo/cli"
-
+	"github.com/ledgerwatch/turbo-geth/turbo/node"
 	"github.com/urfave/cli"
 )
 
@@ -27,6 +26,7 @@ func main() {
 	}
 }
 func runTurboGeth(ctx *cli.Context) {
+	defer dbutils.CompressionDicts.Release()
 	// creating staged sync with all default parameters
 	sync := stagedsync.New(
 		stagedsync.DefaultStages(),
